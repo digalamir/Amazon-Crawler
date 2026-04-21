@@ -1,0 +1,6 @@
+import pandas as pd
+
+data = {"Name": ["Alice", "Bob"], "Age": [25, 30]}
+df = pd.DataFrame(data)
+df.to_excel("test_output.xlsx", index=False, engine="openpyxl")
+print("✅ Excel file created successfully!")
