@@ -5,7 +5,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+
 import pandas as pd
+import json
 import time
 import os
 
@@ -51,45 +53,45 @@ def scrape_page(driver):
         except:
             title = "N/A"
     
-        # try:
-        #     # Product Price
-        #     price = item.find_element(
-        #         By.XPATH, './/span[@class="a-price-whole"]'
-        #     ).text.strip()
-        #     price = f"£{price}"
-        # except:
-        #     price = "N/A"
+        try:
+            # Product Price
+            price = item.find_element(
+                By.XPATH, './/span[@class="a-price-whole"]'
+            ).text.strip()
+            price = f"£{price}"
+        except:
+            price = "N/A"
 
-        # try:
-        #     # Star Rating
-        #     rating = item.find_element(
-        #         By.XPATH, './/span[@class="a-icon-alt"]'
-        #     ).get_attribute("innerHTML").strip()
-        # except:
-        #     rating = "N/A"
+        try:
+            # Star Rating
+            rating = item.find_element(
+                By.XPATH, './/span[@class="a-icon-alt"]'
+            ).get_attribute("innerHTML").strip()
+        except:
+            rating = "N/A"
 
-        # try:
-        #     # Number of Reviews
-        #     reviews = item.find_element(
-        #         By.XPATH, './/span[@data-component-type="s-client-side-analytics"]//span[@aria-label]'
-        #     ).get_attribute("aria-label").strip()
-        # except:
-        #     reviews = "N/A"
+        try:
+            # Number of Reviews
+            reviews = item.find_element(
+                By.XPATH, './/span[@data-component-type="s-client-side-analytics"]//span[@aria-label]'
+            ).get_attribute("aria-label").strip()
+        except:
+            reviews = "N/A"
 
-        # try:
-        #     # Product URL
-        #     url = item.find_element(
-        #         By.XPATH, './/h2/a'
-        #     ).get_attribute("href")
-        # except:
-        #     url = "N/A"
+        try:
+            # Product URL
+            url = item.find_element(
+                By.XPATH, './/h2/a'
+            ).get_attribute("href")
+        except:
+            url = "N/A"
 
         products.append({
             "Title": title,
-            # "Price": price,
-            # "Rating": rating,
-            # "Reviews": reviews,
-            # "URL": url
+            "Price": price,
+            "Rating": rating,
+            "Reviews": reviews,
+            "URL": url
         })
         
     return products
@@ -149,7 +151,7 @@ def save_results(products, keyword):
     os.makedirs("results", exist_ok = True)
     # cleaning keyword to avoid bad characters in filename
     clean_keyword = "".join(c if c.isalnum() or c == " " else "_" for c in keyword)
-    filename = f"results/{clean_keyword.replace(' ', '_')}_product_results.xlsx"
+    filename = f"results/{clean_keyword.replace(' ', '_')}.xlsx"
     
     df = pd.DataFrame(products)
     df.to_excel(filename, index = False, engine = "openpyxl")
@@ -157,15 +159,47 @@ def save_results(products, keyword):
     print(f"\nResults saved to: {filename}")
     print(df.head())
     
+# load keywords from JSON file
+def load_keywords(filepath="brand-keywords/keywords.json"):
+    try:
+        with open(filepath, "r") as file:
+            data = json.load(file)
+            keywords = data.get("keywords", [])
+            if not keywords:
+                print("No keywords in JSON file.")
+                return []
+            print(f"Loaded {len(keywords)} keywords from {filepath}")
+            return keywords
+    
+    except FileNotFoundError:
+        print(f"File not found: {filepath}")
+        return []
+    
+    except json.JSONDecodeError:
+        print(f"Invalid JSON format in file: {filepath}")
+        return []
+
+    
     
 # Main Entry Point
 if __name__ == "__main__":
-    keyword = input("Enter search keyword: ")
-    results = crawl_amazon(keyword, max_results = 100)
+    keywords = load_keywords()
     
-    if results:
-        save_results(results, keyword)
-        print(f"\n Total Products scraped: {len(results)}")
-        
+    if not keywords:
+        print("No keywords found. Please check the JSON file.")
+    
     else:
-        print("No Products Found.")
+        for keyword in keywords:
+            keyword =  keyword.lower().strip()
+            print(f"\n{'='*50}")
+            print(f"Processing keyword: '{keyword}'")
+            print(f"{'='*50}")
+            
+            results = crawl_amazon(keyword)
+            if results:
+                save_results(results, keyword)
+                print(f"Finished processing '{keyword}' with {len(results)} products collected.")
+            else:
+                print(f"No products found for '{keyword}'.")
+                
+        print("\nAll keywords processed.")
