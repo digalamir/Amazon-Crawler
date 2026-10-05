@@ -75,6 +75,7 @@ def scrape_page(driver):
             reviews = item.find_element(
                 By.XPATH, './/span[@data-component-type="s-client-side-analytics"]//span[@aria-label]'
             ).get_attribute("aria-label").strip()
+            //*[@id="9a6990a2-ec95-4a44-b9d1-315ca1d2b0f0"]/div/div/div/div/span/div/div/div/div[2]/div/div/div[2]/div[1]/a/span
         except:
             reviews = "N/A"
 
@@ -203,3 +204,4 @@ if __name__ == "__main__":
                 print(f"No products found for '{keyword}'.")
                 
         print("\nAll keywords processed.")
+        
